@@ -1,7 +1,8 @@
 # 畢業學分檢核 · 交大資工乙組
 
 依 114 學年度資工系課程架構表、共同課程通則（112–114 學年度入學適用）與核心課程修習辦法
-（115.06.15 核備）寫成的靜態網頁工具。純前端，資料存在瀏覽器 localStorage，不會送到任何伺服器。
+（115.06.15 核備）寫成的靜態網頁工具。資料預設存在瀏覽器 localStorage；若有設定自架 API，
+可用 Google 登入把資料同步到自己的伺服器（見 [server/SETUP.md](server/SETUP.md)）。
 
 ## 開發
 
@@ -31,6 +32,9 @@ npm run dev
 | `parseTranscript()` | 成績通知單解析，讀「課別」欄 |
 | `allocate()` | 桶位分配、溢流、上限 |
 | `programProgress()` | 主題學程進度比對 |
+| `src/useCloudSync.js` | 登入後的雲端同步邏輯 |
+| `src/cloud.js` / `src/AuthBar.jsx` | API 呼叫、Google 登入按鈕 |
+| `server/` | 自架 API（Express + SQLite），部署見 `server/SETUP.md` |
 
 ## 規則備忘
 

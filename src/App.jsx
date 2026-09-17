@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
+import AuthBar from "./AuthBar.jsx";
+import { useCloudSync } from "./useCloudSync.js";
 
 /* ================================================================== *
  * 規則表：以「入學學年度」為 key
@@ -328,15 +330,20 @@ export default function App() {
     URL.revokeObjectURL(a.href);
   };
 
+  const applyData = (d) => {
+    if (d.year) setYear(d.year);
+    if (Array.isArray(d.courses)) setCourses(d.courses);
+    if (d.gates) setGates(d.gates);
+    if (d.target) setTarget(d.target);
+  };
+
+  const cloud = useCloudSync({ year, courses, gates, target }, applyData);
+
   const importJSON = (file) => {
     const fr = new FileReader();
     fr.onload = () => {
       try {
-        const d = JSON.parse(fr.result);
-        if (d.year) setYear(d.year);
-        if (Array.isArray(d.courses)) setCourses(d.courses);
-        if (d.gates) setGates(d.gates);
-        if (d.target) setTarget(d.target);
+        applyData(JSON.parse(fr.result));
       } catch {
         alert("這個檔案讀不出來，請確認是本工具匯出的 JSON。");
       }
@@ -384,12 +391,15 @@ export default function App() {
           <h1>畢業學分檢核</h1>
           <p className="sub">{rules.label}　·　最低畢業學分 {rules.total}</p>
         </div>
-        <label className="yearpick">
-          入學學年度
-          <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
-            {Object.keys(RULES).map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
-        </label>
+        <div className="headright">
+          {cloud.enabled && <AuthBar {...cloud} />}
+          <label className="yearpick">
+            入學學年度
+            <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
+              {Object.keys(RULES).map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </label>
+        </div>
       </header>
 
       <section className="hero">
@@ -670,6 +680,13 @@ const CSS = `
 .sub{color:var(--muted);font-size:13px;margin-top:4px}
 .head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
   max-width:1060px;margin:0 auto 20px;flex-wrap:wrap}
+.headright{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.authbar{display:flex;align-items:center;gap:10px;font-size:13px;min-height:32px}
+.who{font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.syncstate{color:var(--muted);font-size:12px}
+.syncstate.err{color:var(--warn)}
+.linkbtn{font:inherit;font-size:12px;color:var(--accent);background:none;border:none;padding:0;cursor:pointer}
+.linkbtn:hover{text-decoration:underline}
 .yearpick{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
 .yearpick select{font:inherit;font-size:14px;color:var(--ink);padding:6px 10px;
   border:1px solid var(--line);border-radius:6px;background:var(--surface)}

@@ -1,0 +1,19 @@
+# 安裝：
+#   sudo cp graduation-api.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now graduation-api
+# 若 User 或路徑不同，改下面三行。
+[Unit]
+Description=graduation-credits API
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/graduation-credits/server
+Environment=NODE_ENV=production
+EnvironmentFile=/home/ubuntu/graduation-credits/server/.env
+ExecStart=/usr/bin/node index.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
