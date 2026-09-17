@@ -25,6 +25,12 @@ Tailscale Funnel 免費、不用買網域、不用在路由器開 port，適合�
 
 ## 2. 在 Ubuntu 上跑 API
 
+以下指令都在 **Ubuntu server 上**執行，不是在寫程式的電腦上。
+從 Windows 連過去：開 PowerShell 輸入 `ssh 帳號@server的IP`（IP 在 server 上用 `hostname -I` 查）。
+
+server 是從 GitHub 抓程式，所以要先把程式 push 上去並合併進 `main`。
+還沒合併的話，下面的 clone 改成 `git clone -b feature/cloud-sync ...`。
+
 ```bash
 # 安裝 Node.js 22
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
