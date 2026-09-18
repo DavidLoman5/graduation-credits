@@ -42,17 +42,18 @@ export function allocate(courses, rules) {
   const free = Math.min(rawFree, caps.free);
   const ovFree = Math.max(0, rawFree - caps.free);
 
+  // short：手機版分段條用的兩字標籤
   const buckets = [
-    { key: "basic", label: "基礎科學", got: basic, cap: caps.basic,
+    { key: "basic", label: "基礎科學", short: "基礎", got: basic, cap: caps.basic,
       out: ovBasic ? [{ to: "自由選修", n: ovBasic }] : [], in: [] },
-    { key: "required", label: "必修", got: required, cap: caps.required,
+    { key: "required", label: "必修", short: "必修", got: required, cap: caps.required,
       out: ovReq ? [{ to: "專業選修", n: ovReq }] : [], in: [] },
-    { key: "program", label: "學程選修", got: program, cap: caps.program,
+    { key: "program", label: "學程選修", short: "學程", got: program, cap: caps.program,
       out: ovProg ? [{ to: "專業選修", n: ovProg }] : [], in: [] },
-    { key: "prof", label: "專業選修", got: prof, cap: caps.prof,
+    { key: "prof", label: "專業選修", short: "專選", got: prof, cap: caps.prof,
       out: ovProf ? [{ to: "自由選修", n: ovProf }] : [],
       in: [ovProg && { from: "學程選修", n: ovProg }, ovReq && { from: "必修", n: ovReq }].filter(Boolean) },
-    { key: "core", label: "核心課程", got: core, cap: caps.core,
+    { key: "core", label: "核心課程", short: "核心", got: core, cap: caps.core,
       out: [
         coreIn && { to: "自由選修", n: coreIn, capped: true },
         coreDropped && { to: "未採計", n: coreDropped, dropped: true },
@@ -61,9 +62,9 @@ export function allocate(courses, rules) {
         { label: "基本素養", got: rawLit, min: rules.mins.literacy },
         { label: "領域課程", got: rawDom, min: rules.mins.domain },
       ] },
-    { key: "lang", label: "語言與溝通", got: lang, cap: caps.lang,
+    { key: "lang", label: "語言與溝通", short: "語言", got: lang, cap: caps.lang,
       out: ovLang ? [{ to: "自由選修", n: ovLang }] : [], in: [] },
-    { key: "free", label: "自由選修", got: free, cap: caps.free,
+    { key: "free", label: "自由選修", short: "自選", got: free, cap: caps.free,
       out: ovFree ? [{ to: "無處可去", n: ovFree }] : [],
       in: [
         ovBasic && { from: "基礎科學", n: ovBasic },

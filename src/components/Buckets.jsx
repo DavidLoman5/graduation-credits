@@ -5,8 +5,8 @@ export default function Buckets({ result, rules }) {
   const [showRules, setShowRules] = useState(false);
 
   return (
-    <section className="panel">
-      <h2>學分桶位</h2>
+    <section className="panel" aria-labelledby="buckets-title">
+      <h2 id="buckets-title">學分桶位</h2>
       {result.buckets.map((b) => (
         <div className="bucket" key={b.key}>
           <div className="brow">
@@ -46,7 +46,7 @@ export default function Buckets({ result, rules }) {
         </div>
       )}
 
-      <button className="link" onClick={() => setShowRules((s) => !s)}>
+      <button className="link" onClick={() => setShowRules((s) => !s)} aria-expanded={showRules}>
         {showRules ? "收起" : "這個工具用了哪些規則"}
       </button>
       {showRules && (

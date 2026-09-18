@@ -2,10 +2,10 @@ import { PROGRAMS } from "../data/programs.js";
 
 export default function ProgramPanel({ ranked, shown, target, setTarget }) {
   return (
-    <section className="panel">
+    <section className="panel" aria-labelledby="program-title">
       <div className="phead">
-        <h2>主題學程</h2>
-        <select className="psel" value={target} onChange={(e) => setTarget(e.target.value)}>
+        <h2 id="program-title">主題學程</h2>
+        <select className="psel" value={target} onChange={(e) => setTarget(e.target.value)} aria-label="選擇主題學程">
           <option value="auto">自動比對（最接近）</option>
           {PROGRAMS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>

@@ -12,6 +12,7 @@ import ProgramPanel from "./components/ProgramPanel.jsx";
 import GatesPanel from "./components/GatesPanel.jsx";
 import CoursesPanel from "./components/CoursesPanel.jsx";
 import DataBar from "./components/DataBar.jsx";
+import ConflictDialog from "./components/ConflictDialog.jsx";
 
 export default function App() {
   const saved = useMemo(loadSaved, []);
@@ -77,7 +78,7 @@ export default function App() {
       <Hero result={result} rules={rules} remaining={remaining}
         gatesDone={gatesDone} gatesTotal={activeGates.length} />
 
-      <div className="grid">
+      <main className="grid">
         <div className="col">
           <Buckets result={result} rules={rules} />
         </div>
@@ -87,9 +88,17 @@ export default function App() {
             engCandidates={engCandidates} doneProgs={doneProgs} />
           <CoursesPanel courses={courses} setCourses={setCourses} />
         </div>
-      </div>
+      </main>
 
       <DataBar data={data} year={year} onImport={applyData} />
+
+      {cloud.conflict && (
+        <ConflictDialog
+          cloudCount={cloud.conflict.cloud.courses?.length ?? 0}
+          localCount={courses.length}
+          onResolve={cloud.resolveConflict}
+        />
+      )}
 
       <footer className="foot">
         依 114 學年度資工系課程架構表、共同課程通則（112–114 學年度入學適用）、核心課程修習辦法（115.06.15 核備）編寫。實際採計以系辦與註冊組認定為準。

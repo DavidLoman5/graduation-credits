@@ -1,7 +1,7 @@
 export default function GatesPanel({ gateList, year, setGates, engCandidates, doneProgs }) {
   return (
-    <section className="panel">
-      <h2>畢業門檻</h2>
+    <section className="panel" aria-labelledby="gates-title">
+      <h2 id="gates-title">畢業門檻</h2>
       <p className="hint">這些項目多半 0 學分，但沒過一樣不能畢業。</p>
       {gateList.map((g) => (
         <div className={"gate" + (g.on ? "" : " off")} key={g.id}>

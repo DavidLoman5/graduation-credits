@@ -1,25 +1,31 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { cloudEnabled, loadSession, loginWithGoogle, logout, fetchData, saveData, AuthError } from "./cloud.js";
 
+const toJson = (d) => JSON.stringify({ year: d.year, courses: d.courses, gates: d.gates, target: d.target });
+
 /**
  * 登入後把 data 同步到雲端。
- * - 登入時：雲端沒資料 → 上傳本機；雲端有資料 → 套用（本機也有不同的資料時先問）
+ * - 登入時：雲端沒資料 → 上傳本機；雲端有資料 → 套用；兩邊都有且不同 → 回傳 conflict 讓畫面問
  * - 之後 data 一變動，1 秒後自動上傳；上傳一律排隊依序送出，避免舊資料後到蓋掉新的
- * status: "off" 未登入 | "loading" | "synced" | "saving" | "error"
+ * status: "off" 未登入 | "loading" | "conflict" | "synced" | "saving" | "error"
  */
 export function useCloudSync(data, apply) {
   const [session, setSession] = useState(() => (cloudEnabled ? loadSession() : null));
   const [status, setStatus] = useState("off");
+  const [conflict, setConflict] = useState(null); // { cloud, cloudJson }
   const ready = useRef(false);       // 初次載入完成前不上傳，避免蓋掉雲端
   const lastSynced = useRef(null);   // 已與雲端一致的 JSON，用來略過重複上傳
   const queue = useRef(Promise.resolve()); // 上傳串成鏈，保證送達順序
   const seq = useRef(0);             // 最新一次上傳的序號，只有它完成才算 synced
-  const json = JSON.stringify(data);
+  const json = toJson(data);
+  const latestJson = useRef(json);
+  latestJson.current = json;
 
   const signOut = useCallback(() => {
     logout();
     ready.current = false;
     lastSynced.current = null;
+    setConflict(null);
     setSession(null);
     setStatus("off");
   }, []);
@@ -47,28 +53,48 @@ export function useCloudSync(data, apply) {
     fetchData(session.token)
       .then(async ({ data: cloud }) => {
         if (cancelled) return;
-        const local = JSON.parse(json);
-        const cloudJson = cloud && JSON.stringify({ year: cloud.year, courses: cloud.courses, gates: cloud.gates, target: cloud.target });
-        const useCloud = cloud && (
-          cloudJson === json ||
-          local.courses.length === 0 ||
-          window.confirm("雲端已有儲存的資料，和這台裝置上的不同。\n\n確定：載入雲端資料（本機資料會被取代）\n取消：用本機資料覆蓋雲端")
-        );
-        if (useCloud) {
+        const local = JSON.parse(latestJson.current);
+        const cloudJson = cloud && toJson(cloud);
+        if (cloud && cloudJson !== latestJson.current && local.courses.length > 0) {
+          setConflict({ cloud, cloudJson });
+          setStatus("conflict");
+          return;
+        }
+        if (cloud) {
           apply(cloud);
           lastSynced.current = cloudJson;
         } else {
           await saveData(session.token, local);
-          lastSynced.current = json;
+          lastSynced.current = latestJson.current;
         }
         ready.current = true;
         setStatus("synced");
       })
       .catch((err) => !cancelled && fail(err));
     return () => { cancelled = true; };
-    // 只在 session 改變時執行；json 取的是當下的本機資料
+    // 只在 session 改變時執行；apply 每次 render 都是新函數，但行為相同
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
+
+  const resolveConflict = useCallback(async (choice) => {
+    if (!conflict || !session) return;
+    setConflict(null);
+    setStatus("loading");
+    try {
+      if (choice === "cloud") {
+        apply(conflict.cloud);
+        lastSynced.current = conflict.cloudJson;
+      } else {
+        const local = latestJson.current;
+        await saveData(session.token, JSON.parse(local));
+        lastSynced.current = local;
+      }
+      ready.current = true;
+      setStatus("synced");
+    } catch (err) {
+      fail(err);
+    }
+  }, [conflict, session, apply, fail]);
 
   // 資料變動 → 延遲 1 秒後排入上傳佇列
   useEffect(() => {
@@ -89,5 +115,5 @@ export function useCloudSync(data, apply) {
     return () => clearTimeout(t);
   }, [json, session, fail]);
 
-  return { enabled: cloudEnabled, session, status, onCredential, signOut };
+  return { enabled: cloudEnabled, session, status, conflict, resolveConflict, onCredential, signOut };
 }
