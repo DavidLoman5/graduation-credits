@@ -165,6 +165,37 @@ describe("parseTranscript：個別規則", () => {
     expect(rows[0].cat).toBe("program");
   });
 
+  it("OCR 的學期標題：字間有空白、缺「第」、缺學年度都能認得", () => {
+    const rows = parse([
+      "雙主修 入學年月 114 年 9 月",
+      "114 學年度第 1 學期(114 年 9 月至 115 年 1 月)",
+      "必 機率 3.00 A",
+      "學年度 2 學期(115 年 2 月至 115 年 6 月)",
+      "必 離散數學 3.00 A",
+    ].join("\n"));
+    expect(rows.map((r) => r.term)).toEqual(["114-1", "114-2"]);
+  });
+
+  it("缺學年度的標題若沒有任何依據就維持原本的 term", () => {
+    const rows = parse("學年度第 2 學期\n必 離散數學 3.00 A");
+    expect(rows[0].term).toBe("");
+  });
+
+  it("嚴格模式：沒有課別碼也沒有學分的列丟掉；抬頭與說明碎片一律丟掉", () => {
+    const text = [
+      "學 114550170 姓名陳優資訊學",
+      "了所組別資訊工程學系學士班",
+      "修",
+      "TR 免貫未完成 , 成績送達示 ; 不及 , 通過 ;",
+      "必 離散數學 3.00 A+",
+      "離散數學概論",
+      "修 1 一一",
+    ].join("\n");
+    expect(parseTranscript(text, { strict: true }).rows.map((r) => r.name)).toEqual(["離散數學"]);
+    // 非嚴格模式仍接受沒有學分的純課名列（含這些雜訊），所以貼上文字時不用 strict
+    expect(parseTranscript(text).rows.map((r) => r.name)).toEqual(["修", "離散數學", "離散數學概論", "修"]);
+  });
+
   it("學期標題決定 term；標題前的課為未分學期", () => {
     const rows = parse("必 離散數學 3.00 A\n114學年度第1學期(114年9月至115年1月)\n必 機率 3.00 A\n115學年度第2學期\n必 演算法概論 3.00 A");
     expect(rows.map((r) => r.term)).toEqual(["", "114-1", "115-2"]);

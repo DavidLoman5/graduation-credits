@@ -19,7 +19,7 @@ export default function CoursesPanel({ courses, setCourses, year, onImport }) {
   const [ocr, setOcr] = useState({ phase: "idle", progress: 0, status: "", error: "" });
 
   const parse = (text = paste, fromOcr = false) => {
-    const { rows, meta } = parseTranscript(text);
+    const { rows, meta } = parseTranscript(text, { strict: fromOcr });
     // 已經在清單裡的（同學期同課名）預設不勾，避免每學期重貼整份就重複
     const existing = new Set(courses.map((c) => `${c.term || ""}|${norm(c.name)}`));
     setStaged({
