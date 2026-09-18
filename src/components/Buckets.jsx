@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { r } from "../lib/util.js";
 
-export default function Buckets({ result }) {
+export default function Buckets({ result, rules }) {
   const [showRules, setShowRules] = useState(false);
 
   return (
@@ -31,8 +31,8 @@ export default function Buckets({ result }) {
             <div className="flows">
               {b.in.map((f, i) => <span className="flow in" key={"i" + i}>收到 {r(f.n)}　←　{f.from}</span>)}
               {b.out.map((f, i) => (
-                <span className={"flow out" + (f.capped ? " capped" : "")} key={"o" + i}>
-                  溢流 {r(f.n)}　→　{f.to}{f.capped ? "（受 4 學分上限）" : ""}
+                <span className={"flow out" + (f.capped ? " capped" : "") + (f.dropped ? " dropped" : "")} key={"o" + i}>
+                  溢流 {r(f.n)}　→　{f.to}{f.capped ? `（上限 ${rules.coreIntoFreeCap} 學分）` : ""}
                 </span>
               ))}
             </div>
@@ -55,7 +55,7 @@ export default function Buckets({ result }) {
           <li>學程選修超修 → 專業選修；專業選修超修 → 自由選修。這兩段不設額外上限。</li>
           <li>核心課程至少 18（基本素養 ≥6、領域 ≥8，其餘 4 自由分配）。資訊學院對四大領域不予限制。</li>
           <li>語言與溝通至少 6（英文必修 4）。兩類合計可超過 6，超過部分不可轉換為核心學分。</li>
-          <li>通識與外語超修進入自由選修時，合計以 4 學分為上限（保守解釋，待系辦確認）。</li>
+          <li>通識（核心課程）超修進入自由選修以 {rules.coreIntoFreeCap} 學分為上限；語言與溝通超修不受此限，可全數計入自由選修。</li>
           <li>自由選修不採計體育、服務學習、軍訓、護理。</li>
           <li>共掛課程不得兩計：一門課只會落在一個桶位。</li>
         </ul>

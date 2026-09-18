@@ -5,7 +5,8 @@ export default function DataBar({ data, year, onImport }) {
     a.href = URL.createObjectURL(blob);
     a.download = `畢業學分-${year}-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
-    URL.revokeObjectURL(a.href);
+    // Firefox 若立刻 revoke 偶爾會下載失敗，延後釋放
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
 
   const importJSON = (file) => {

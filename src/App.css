@@ -65,6 +65,7 @@
   padding:3px 9px;border-radius:4px;align-self:flex-start}
 .flow.in{color:var(--accent);background:var(--accentSoft)}
 .flow.capped{border:1px dashed #D9B77E}
+.flow.dropped{color:var(--warn);background:#FBE9E7}
 
 .notes{margin-top:16px;display:flex;flex-direction:column;gap:8px}
 .note{font-size:12.5px;padding:9px 12px;border-radius:6px;border-left:3px solid}

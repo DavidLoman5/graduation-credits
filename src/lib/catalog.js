@@ -23,8 +23,11 @@ addCat("excluded", ["大一體育", "體育", "服務學習(一)", "服務學習
 export function guess(name) {
   const n = norm(name);
   if (CATALOG[n]) return CATALOG[n];
-  for (const key of Object.keys(CATALOG)) {
-    if (key.length >= 3 && (n.includes(key) || key.includes(n))) return CATALOG[key];
+  // 子字串比對：輸入太短（如「一」）會誤中「微積分(一)」，所以兩邊都要夠長
+  if (n.length >= 2) {
+    for (const key of Object.keys(CATALOG)) {
+      if (key.length >= 3 && (n.includes(key) || key.includes(n))) return CATALOG[key];
+    }
   }
   if (/英文|ENGLISH|外語|日文|德文|法文|韓文|西班牙文|寫作|溝通與表達|台語|客語/.test(n))
     return { cat: "lang", credits: 2 };

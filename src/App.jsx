@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import "./App.css";
-import { RULES, DEFAULT_YEAR } from "./data/rules.js";
+import { RULES } from "./data/rules.js";
 import { allocate } from "./lib/allocate.js";
 import { programProgress } from "./lib/progress.js";
-import { loadSaved, persist } from "./lib/storage.js";
+import { loadSaved, persist, normalizeData } from "./lib/storage.js";
 import { useCloudSync } from "./useCloudSync.js";
 import AuthBar from "./components/AuthBar.jsx";
 import Hero from "./components/Hero.jsx";
@@ -15,21 +15,22 @@ import DataBar from "./components/DataBar.jsx";
 
 export default function App() {
   const saved = useMemo(loadSaved, []);
-  const [year, setYear] = useState(saved.year ?? DEFAULT_YEAR);
-  const [courses, setCourses] = useState(Array.isArray(saved.courses) ? saved.courses : []);
-  const [gates, setGates] = useState(saved.gates ?? {});
-  const [target, setTarget] = useState(saved.target ?? "auto");
+  const [year, setYear] = useState(saved.year);
+  const [courses, setCourses] = useState(saved.courses);
+  const [gates, setGates] = useState(saved.gates);
+  const [target, setTarget] = useState(saved.target);
 
   const rules = RULES[year];
   const data = { year, courses, gates, target };
 
   useEffect(() => { persist({ year, courses, gates, target }); }, [year, courses, gates, target]);
 
-  const applyData = (d) => {
-    if (d.year) setYear(d.year);
-    if (Array.isArray(d.courses)) setCourses(d.courses);
-    if (d.gates) setGates(d.gates);
-    if (d.target) setTarget(d.target);
+  const applyData = (raw) => {
+    const d = normalizeData(raw);
+    setYear(d.year);
+    setCourses(d.courses);
+    setGates(d.gates);
+    setTarget(d.target);
   };
 
   const cloud = useCloudSync(data, applyData);
@@ -78,7 +79,7 @@ export default function App() {
 
       <div className="grid">
         <div className="col">
-          <Buckets result={result} />
+          <Buckets result={result} rules={rules} />
         </div>
         <div className="col">
           <ProgramPanel ranked={ranked} shown={shown} target={target} setTarget={setTarget} />

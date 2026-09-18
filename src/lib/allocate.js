@@ -53,7 +53,10 @@ export function allocate(courses, rules) {
       out: ovProf ? [{ to: "自由選修", n: ovProf }] : [],
       in: [ovProg && { from: "學程選修", n: ovProg }, ovReq && { from: "必修", n: ovReq }].filter(Boolean) },
     { key: "core", label: "核心課程", got: core, cap: caps.core,
-      out: ovCore ? [{ to: "自由選修", n: ovCore, capped: true }] : [], in: [],
+      out: [
+        coreIn && { to: "自由選修", n: coreIn, capped: true },
+        coreDropped && { to: "未採計", n: coreDropped, dropped: true },
+      ].filter(Boolean), in: [],
       sub: [
         { label: "基本素養", got: rawLit, min: rules.mins.literacy },
         { label: "領域課程", got: rawDom, min: rules.mins.domain },

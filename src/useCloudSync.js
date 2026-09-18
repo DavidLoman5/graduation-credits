@@ -4,7 +4,7 @@ import { cloudEnabled, loadSession, loginWithGoogle, logout, fetchData, saveData
 /**
  * 登入後把 data 同步到雲端。
  * - 登入時：雲端沒資料 → 上傳本機；雲端有資料 → 套用（本機也有不同的資料時先問）
- * - 之後 data 一變動，1 秒後自動上傳
+ * - 之後 data 一變動，1 秒後自動上傳；上傳一律排隊依序送出，避免舊資料後到蓋掉新的
  * status: "off" 未登入 | "loading" | "synced" | "saving" | "error"
  */
 export function useCloudSync(data, apply) {
@@ -12,6 +12,8 @@ export function useCloudSync(data, apply) {
   const [status, setStatus] = useState("off");
   const ready = useRef(false);       // 初次載入完成前不上傳，避免蓋掉雲端
   const lastSynced = useRef(null);   // 已與雲端一致的 JSON，用來略過重複上傳
+  const queue = useRef(Promise.resolve()); // 上傳串成鏈，保證送達順序
+  const seq = useRef(0);             // 最新一次上傳的序號，只有它完成才算 synced
   const json = JSON.stringify(data);
 
   const signOut = useCallback(() => {
@@ -68,17 +70,21 @@ export function useCloudSync(data, apply) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
-  // 資料變動 → 延遲 1 秒上傳
+  // 資料變動 → 延遲 1 秒後排入上傳佇列
   useEffect(() => {
     if (!session || !ready.current || json === lastSynced.current) return;
     setStatus("saving");
     const t = setTimeout(() => {
-      saveData(session.token, JSON.parse(json))
+      const mySeq = ++seq.current;
+      queue.current = queue.current
+        .then(() => saveData(session.token, JSON.parse(json)))
         .then(() => {
           lastSynced.current = json;
-          setStatus("synced");
+          if (mySeq === seq.current) setStatus("synced");
         })
-        .catch(fail);
+        .catch((err) => {
+          if (mySeq === seq.current) fail(err);
+        });
     }, 1000);
     return () => clearTimeout(t);
   }, [json, session, fail]);
