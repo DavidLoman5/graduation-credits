@@ -9,6 +9,7 @@ const LIMITS = {
   name: 200,
   cat: 20,
   id: 32,
+  term: 10,
   gates: 200,
   gateKey: 40,
   target: 20,
@@ -34,7 +35,8 @@ export function validateData(data) {
     if (!isStr(c.cat, LIMITS.cat)) return { ok: false, error: `courses[${i}].cat 不正確` };
     if (c.id !== undefined && !isStr(c.id, LIMITS.id)) return { ok: false, error: `courses[${i}].id 不正確` };
     if (c.eng !== undefined && typeof c.eng !== "boolean") return { ok: false, error: `courses[${i}].eng 不正確` };
-    courses.push({ id: c.id, name: c.name, credits, cat: c.cat, eng: c.eng ?? false });
+    if (c.term !== undefined && !isStr(c.term, LIMITS.term)) return { ok: false, error: `courses[${i}].term 不正確` };
+    courses.push({ id: c.id, name: c.name, credits, cat: c.cat, eng: c.eng ?? false, term: c.term ?? "" });
   }
 
   const gates = {};

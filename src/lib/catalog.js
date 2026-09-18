@@ -5,7 +5,11 @@ import { norm } from "./util.js";
 export const CATALOG = {};
 const addCat = (cat, names, credits) => names.forEach((n) => (CATALOG[norm(n)] = { cat, credits }));
 
-addCat("basic", ["微積分(一)", "微積分(二)", "物理(一)", "物理(二)"], 4);
+// 微積分在成績單上會帶甲／乙班別
+addCat("basic", [
+  "微積分(一)", "微積分(二)", "微積分甲(一)", "微積分甲(二)", "微積分乙(一)", "微積分乙(二)",
+  "物理(一)", "物理(二)",
+], 4);
 addCat("basic", ["普通生物學(一)", "普通生物學(二)", "化學(一)", "化學(二)"], 3);
 addCat("required", [
   "線性代數", "計算機概論與程式設計", "資料結構與物件導向程式設計", "離散數學",

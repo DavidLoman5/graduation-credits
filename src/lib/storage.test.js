@@ -24,11 +24,20 @@ describe("normalizeData", () => {
       { id: "keep", name: "機率", credits: 3, cat: "required" },
     ] });
     expect(courses).toHaveLength(3);
-    expect(courses[0]).toMatchObject({ name: "離散數學", credits: 3, cat: "required", eng: true });
+    expect(courses[0]).toMatchObject({ name: "離散數學", credits: 3, cat: "required", eng: true, term: "" });
     expect(typeof courses[0].id).toBe("string");
     expect(courses[0].id).not.toBe("");
     expect(courses[1]).toMatchObject({ name: "123", credits: 0, cat: "unknown", eng: false });
     expect(courses[2].id).toBe("keep");
+  });
+
+  it("term 只接受字串，過長會截斷", () => {
+    const mk = (term) => normalizeData({ courses: [{ name: "a", credits: 1, cat: "free", term }] }).courses[0].term;
+    expect(mk("114-1")).toBe("114-1");
+    expect(mk("TR")).toBe("TR");
+    expect(mk(5)).toBe("");
+    expect(mk(undefined)).toBe("");
+    expect(mk("x".repeat(20))).toHaveLength(10);
   });
 
   it("課程陣列中的非物件會被過濾", () => {

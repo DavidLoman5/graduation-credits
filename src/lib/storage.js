@@ -22,6 +22,7 @@ export function normalizeData(d) {
         credits: Number.isFinite(credits) ? credits : 0,
         cat: CAT_KEYS.has(c.cat) ? c.cat : "unknown",
         eng: Boolean(c.eng),
+        term: typeof c.term === "string" ? c.term.slice(0, 10) : "",
       };
     });
 

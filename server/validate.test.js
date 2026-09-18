@@ -3,7 +3,7 @@ import { validateData } from "./validate.js";
 
 const good = () => ({
   year: 114,
-  courses: [{ id: "abc1234", name: "離散數學", credits: 3, cat: "required", eng: false }],
+  courses: [{ id: "abc1234", name: "離散數學", credits: 3, cat: "required", eng: false, term: "114-1" }],
   gates: { "114:pe": true },
   target: "auto",
 });
@@ -15,10 +15,17 @@ describe("validateData", () => {
     expect(r.data).toEqual(good());
   });
 
-  it("gates、target、eng、id 可省略", () => {
+  it("gates、target、eng、id、term 可省略", () => {
     const r = validateData({ year: 115, courses: [{ name: "a", credits: 2, cat: "free" }] });
     expect(r.ok).toBe(true);
-    expect(r.data).toEqual({ year: 115, courses: [{ id: undefined, name: "a", credits: 2, cat: "free", eng: false }], gates: {}, target: "auto" });
+    expect(r.data).toEqual({ year: 115, courses: [{ id: undefined, name: "a", credits: 2, cat: "free", eng: false, term: "" }], gates: {}, target: "auto" });
+  });
+
+  it("term 必須是短字串", () => {
+    const withCourse = (c) => validateData({ ...good(), courses: [c] });
+    expect(withCourse({ name: "a", credits: 3, cat: "x", term: 5 }).ok).toBe(false);
+    expect(withCourse({ name: "a", credits: 3, cat: "x", term: "x".repeat(11) }).ok).toBe(false);
+    expect(withCourse({ name: "a", credits: 3, cat: "x", term: "TR" }).ok).toBe(true);
   });
 
   it("非物件、缺 courses、year 不合法都拒絕", () => {

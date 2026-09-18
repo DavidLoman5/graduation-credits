@@ -8,6 +8,11 @@ describe("guess", () => {
     expect(guess("機器學習概論")).toEqual({ cat: "program", credits: 3 });
   });
 
+  it("成績單上帶班別的微積分歸基礎科學", () => {
+    expect(guess("微積分甲(一)")).toEqual({ cat: "basic", credits: 4 });
+    expect(guess("微積分乙(二)")).toEqual({ cat: "basic", credits: 4 });
+  });
+
   it("全形括號、空白、大小寫都能對上", () => {
     expect(guess("微積分（一）").cat).toBe("basic");
     expect(guess(" 離散 數學 ").cat).toBe("required");
