@@ -43,7 +43,7 @@ describe("guess", () => {
 
   it("只錯一個字時模糊比對到目錄並帶回正確課名", () => {
     expect(guess("數信方法")).toMatchObject({ cat: "program", credits: 3, name: "數值方法", fuzzy: true });
-    expect(guess("離散數學概")).toMatchObject({ cat: "required", name: "離散數學", fuzzy: true });
+    expect(guess("離散數字")).toMatchObject({ cat: "required", name: "離散數學", fuzzy: true });
     // 少了最後一個字時，子字串比對就先命中，不算 fuzzy
     expect(guess("資料結構與物件導向程式設")).toMatchObject({ cat: "required", name: "資料結構與物件導向程式設計" });
     expect(guess("資料結構與物件導向程式設").fuzzy).toBeUndefined();
