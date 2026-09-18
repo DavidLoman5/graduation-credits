@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { GOOGLE_CLIENT_ID } from "./cloud.js";
+import { useEffect, useRef } from "react";
+import { GOOGLE_CLIENT_ID } from "../cloud.js";
 
 const GSI_SRC = "https://accounts.google.com/gsi/client";
 
@@ -20,6 +20,7 @@ function loadGsi() {
 
 const STATUS_TEXT = {
   loading: "同步中…",
+  conflict: "等待選擇…",
   saving: "儲存中…",
   synced: "已同步",
   error: "無法連線，資料暫存在本機",
@@ -52,8 +53,10 @@ export default function AuthBar({ session, status, onCredential, signOut }) {
     return (
       <div className="authbar">
         <div ref={btn} />
-        {status === "loading" && <span className="syncstate">登入中…</span>}
-        {status === "error" && <span className="syncstate err">登入失敗，請稍後再試</span>}
+        <span className="syncstate" role="status" aria-live="polite">
+          {status === "loading" && "登入中…"}
+          {status === "error" && <span className="err">登入失敗，請稍後再試</span>}
+        </span>
       </div>
     );
   }
@@ -61,7 +64,9 @@ export default function AuthBar({ session, status, onCredential, signOut }) {
   return (
     <div className="authbar">
       <span className="who" title={session.user?.email}>{session.user?.name || session.user?.email}</span>
-      <span className={"syncstate" + (status === "error" ? " err" : "")}>{STATUS_TEXT[status]}</span>
+      <span className={"syncstate" + (status === "error" ? " err" : "")} role="status" aria-live="polite">
+        {STATUS_TEXT[status]}
+      </span>
       <button className="linkbtn" onClick={signOut}>登出</button>
     </div>
   );
