@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { RULES } from "../data/rules.js";
 import { parseTranscript } from "../lib/parse.js";
+import { ocrImage, statusLabel } from "../lib/ocr.js";
 import { norm, r, termLabel, groupByTerm, sumCredits } from "../lib/util.js";
 import CatSelect from "./CatSelect.jsx";
 import CourseList from "./CourseList.jsx";
@@ -14,16 +15,37 @@ const PLACEHOLDER = [
 
 export default function CoursesPanel({ courses, setCourses, year, onImport }) {
   const [paste, setPaste] = useState("");
-  const [staged, setStaged] = useState(null); // { rows, meta }
+  const [staged, setStaged] = useState(null); // { rows, meta, fromOcr }
+  const [ocr, setOcr] = useState({ phase: "idle", progress: 0, status: "", error: "" });
 
-  const parse = () => {
-    const { rows, meta } = parseTranscript(paste);
+  const parse = (text = paste, fromOcr = false) => {
+    const { rows, meta } = parseTranscript(text);
     // 已經在清單裡的（同學期同課名）預設不勾，避免每學期重貼整份就重複
     const existing = new Set(courses.map((c) => `${c.term || ""}|${norm(c.name)}`));
     setStaged({
-      meta,
+      meta, fromOcr,
       rows: rows.map((s) => (existing.has(`${s.term}|${norm(s.name)}`) ? { ...s, keep: false, dup: true } : s)),
     });
+  };
+
+  const onPhoto = async (file) => {
+    if (!file) return;
+    setStaged(null);
+    setOcr({ phase: "loading", progress: 0, status: "preprocessing", error: "" });
+    try {
+      const text = await ocrImage(file, {
+        onStatus: (status) => setOcr((o) => ({ ...o, phase: "loading", status })),
+        onProgress: (p) => setOcr((o) => ({ ...o, phase: "recognizing", progress: p })),
+      });
+      setOcr({ phase: "idle", progress: 0, status: "", error: "" });
+      setPaste(text);
+      parse(text, true);
+    } catch (err) {
+      const msg = /createImageBitmap|decode/i.test(String(err))
+        ? "讀不出這張圖片。iPhone 的 HEIC 格式請先轉成 JPG，或改用截圖。"
+        : "辨識失敗，請確認網路連線後再試一次。";
+      setOcr({ phase: "error", progress: 0, status: "", error: msg });
+    }
   };
 
   const patchStaged = (id, k, v) =>
@@ -48,22 +70,46 @@ export default function CoursesPanel({ courses, setCourses, year, onImport }) {
       <h2 id="courses-title">已修課程</h2>
 
       <details className="importer">
-        <summary>從歷年成績表貼上</summary>
+        <summary>從歷年成績表匯入</summary>
         <p className="hint">
-          到學校系統開「歷年成績表」，全選複製後整份貼進來。學期標題、抵免、排名與統計列會自動處理；
-          課別欄（必／選／核／語／體）用來分類，<code>#</code> 讀成英語授課。每學期重貼整份也沒關係，已匯入的會自動略過。
+          拍下紙本「歷年成績表」上傳，或到學校系統把頁面文字整份貼進來。學期標題、抵免、排名與統計列會自動處理；
+          課別欄（必／選／核／語／體）用來分類，<code>#</code> 讀成英語授課。每學期重做一次也沒關係，已匯入的會自動略過。
         </p>
+        <div className="importsrc">
+          <label className={"ghost filelabel" + (ocr.phase === "loading" || ocr.phase === "recognizing" ? " busy" : "")}>
+            拍照或選擇成績單照片
+            <input type="file" accept="image/*" capture="environment" aria-label="上傳成績單照片"
+              disabled={ocr.phase === "loading" || ocr.phase === "recognizing"}
+              onChange={(e) => { onPhoto(e.target.files[0]); e.target.value = ""; }} />
+          </label>
+          {(ocr.phase === "loading" || ocr.phase === "recognizing") && (
+            <span className="ocrstate" role="status" aria-live="polite">
+              {ocr.phase === "recognizing"
+                ? <>辨識中 {Math.round(ocr.progress * 100)}%<progress value={ocr.progress} max="1" /></>
+                : statusLabel(ocr.status)}
+            </span>
+          )}
+          {ocr.phase === "error" && <span className="dataerr" role="alert">{ocr.error}</span>}
+        </div>
+        <p className="hint small">拍照時正對成績單、填滿畫面、避免陰影。辨識完會先讓你確認，錯字可以直接在欄位裡改。</p>
         <textarea value={paste} onChange={(e) => setPaste(e.target.value)} placeholder={PLACEHOLDER}
           aria-label="歷年成績表內容" />
-        <button className="primary" onClick={parse} disabled={!paste.trim()}>解析</button>
+        <button className="primary" onClick={() => parse()} disabled={!paste.trim()}>解析</button>
       </details>
 
       {staged && (
         <div className="staging">
           {staged.rows.length === 0 ? (
-            <p className="hint">沒有解析出任何課程。請確認貼的是成績表的內容，每門課一列。</p>
+            <p className="hint">
+              {staged.fromOcr
+                ? "照片裡沒有辨識出課程。請正對成績單、光線充足再拍一次，或改用複製貼上。"
+                : "沒有解析出任何課程。請確認貼的是成績表的內容，每門課一列。"}
+            </p>
           ) : (
-            <p className="hint">確認後匯入。標黃的是「核／通」課別 —— 成績單不分基本素養和領域，要自己選。</p>
+            <p className="hint">
+              {staged.fromOcr && "這是照片辨識的結果，課名或學分若有錯字請直接在欄位裡改。"}
+              確認後匯入。標黃的是「核／通」課別 —— 成績單不分基本素養和領域，要自己選。
+            </p>
           )}
 
           {groupByTerm(staged.rows).map((g) => (

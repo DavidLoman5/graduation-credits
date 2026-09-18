@@ -136,6 +136,7 @@ describe("parseTranscript：個別規則", () => {
       "選  組合數學  3.00  W",
       "選  隨機演算法  3.00  *",
       "選  近似演算法  3.00  X",
+      "選  資訊理論與壓縮編碼的應用  3.00  N",
       "選  數值方法  3.00  **",
       "選  正規語言概論  3.00  I",
       "必  微積分(一)  4.00  TR",
@@ -147,6 +148,23 @@ describe("parseTranscript：個別規則", () => {
     expect(byName(rows, "微積分(一)").term).toBe("TR");
   });
 
+  it("學期成績通知單：大標題裡的學年度學期也會被讀到", () => {
+    const { rows } = parseTranscript("國立陽明交通大學 114學年度第2學期 成績通知單\n學號 114550000 姓名 王小明\n必 離散數學 3.00 A+");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].term).toBe("114-2");
+  });
+
+  it("說明的續行與日期列不當成課程；OCR 錯一個字的課名會用目錄修正", () => {
+    const rows = parse([
+      "說明:N:不計學分; 研:大學部修研究所課程",
+      "P:通過;F:不通過;W:停修;Y:跨學期課程;#:英語授課",
+      "選 數信方法 3.00 A+",
+      "2026年9月18日",
+    ].join("\n"));
+    expect(rows.map((r) => r.name)).toEqual(["數值方法"]);
+    expect(rows[0].cat).toBe("program");
+  });
+
   it("學期標題決定 term；標題前的課為未分學期", () => {
     const rows = parse("必 離散數學 3.00 A\n114學年度第1學期(114年9月至115年1月)\n必 機率 3.00 A\n115學年度第2學期\n必 演算法概論 3.00 A");
     expect(rows.map((r) => r.term)).toEqual(["", "114-1", "115-2"]);
@@ -156,6 +174,12 @@ describe("parseTranscript：個別規則", () => {
     const rows = parse("必 離散數學 3.00 A+ 選 數值方法 3.00 A\n語 英文(一) 2.00 A 核 哲學概論 2.00 B+");
     expect(rows.map((r) => r.name)).toEqual(["離散數學", "數值方法", "英文(一)", "哲學概論"]);
     expect(rows.map((r) => r.credits)).toEqual([3, 3, 2, 2]);
+  });
+
+  it("課名中間被 OCR 插入的空白會去掉", () => {
+    const [row] = parse("必 資料 結構與 物件導向程式設計 3.00 A+");
+    expect(row.name).toBe("資料結構與物件導向程式設計");
+    expect(row.cat).toBe("required");
   });
 
   it("整數學分格式也能解析", () => {

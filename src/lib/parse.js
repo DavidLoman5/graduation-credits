@@ -16,7 +16,9 @@ const SKIP_RE = new RegExp(
   "^(課別|科目名稱|學分|成績|學號|姓名|學院|系所組別|輔系|雙主修|跨域學程|入學年月|畢業年月|國立陽明|" +
   "修習學分|實得學分|學期平均|學期排名|累計|歷年|抵免學分合計|說明|※|GPA|\\d+/\\d+)"
 );
-const TERM_RE = /^(\d{3})學年度第(\d)學期/;
+/* 說明文字的續行（換行後不再以「說明」開頭）與日期列 */
+const LEGEND_RE = /不通過|停修|不計學分|英語授課|境外修習|跨學期課程|成績未送達|^\d{4}年\d{1,2}月\d{1,2}日$/;
+const TERM_RE = /(\d{3})學年度第(\d)學期/; // 歷年成績表的分節標題，或學期成績通知單的大標題
 const ENTRY_RE = /入學年月\s*(\d{3})/;
 /* 兩欄版面貼過來時，一列會有兩門課：在「學分 成績」之後又接課別碼的地方切開 */
 const SPLIT_RE = new RegExp(`(?<=\\d\\.\\d{1,2}\\s+\\S+)\\s+(?=[${CODES}]\\s+)`);
@@ -46,7 +48,7 @@ export function parseTranscript(text) {
     const em = ENTRY_RE.exec(t);
     if (em) { meta.entryYear = Number(em[1]); continue; }
     if (/^學術倫理通過/.test(t)) { meta.ethics = true; continue; }
-    if (SKIP_RE.test(t)) continue;
+    if (SKIP_RE.test(t) || LEGEND_RE.test(t)) continue;
 
     let code = null;
     const cm = CODE_RE.exec(t);
@@ -67,14 +69,17 @@ export function parseTranscript(text) {
     const eng = /#/.test(name);
     name = name.replace(/[#▲§*○●]+/g, "").trim();
     name = name.replace(/^[A-Za-z0-9-]{5,}\s+/, "").trim();
+    // OCR 常在中文字之間插空白
+    name = name.replace(/(?<=[一-鿿()：])\s+(?=[一-鿿()：])/g, "");
     if (!name) continue;
 
     const g = grade.toUpperCase();
-    if (/^(F|X|W)\b/.test(g) || /^\*(?!\*)/.test(g)) continue; // 不及格、不計學分、停修
+    if (/^(F|X|N|W)\b/.test(g) || /^\*(?!\*)/.test(g)) continue; // 不及格、不計學分（X／N）、停修
     const pending = /^\*\*/.test(g) || /^I\b/.test(g);          // 成績未送達／未完成
     const rowTerm = /^TR\b/.test(g) ? "TR" : term;
 
     const guessed = guess(name);
+    if (guessed.fuzzy) name = guessed.name; // OCR 錯一個字：用目錄裡的正確課名
     let cat;
     if (code === "必") cat = guessed.cat === "basic" || guessed.cat === "excluded" ? guessed.cat : "required";
     else if (code === "選") cat = guessed.cat === "program" ? "program" : "prof";
