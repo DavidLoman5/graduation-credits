@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { GOOGLE_CLIENT_ID } from "./cloud.js";
+import { useEffect, useRef } from "react";
+import { GOOGLE_CLIENT_ID } from "../cloud.js";
 
 const GSI_SRC = "https://accounts.google.com/gsi/client";
 
