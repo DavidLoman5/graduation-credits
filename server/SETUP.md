@@ -13,10 +13,13 @@ Tailscale Funnel 免費、不用買網域、不用在路由器開 port，適合�
 
 ## 1. 建立 Google OAuth 用戶端 ID
 
-1. 打開 <https://console.cloud.google.com/>，建立一個專案（名稱隨意）。
-2. 左側「API 和服務」→「OAuth 同意畫面」：User Type 選「外部」，填應用程式名稱與你的 email，其他可先留空。
-   發布狀態改成「正式版」，否則只有測試使用者名單上的人能登入（只要基本登入，不需送審）。
-3. 「憑證」→「建立憑證」→「OAuth 用戶端 ID」→ 類型選「網頁應用程式」。
+Google 已把 OAuth 設定搬到「Google Auth Platform」，舊教學說的「API 和服務 → 憑證」不一定找得到，直接用下面的網址。
+
+1. 打開 <https://console.cloud.google.com/auth/overview>。沒有專案的話先在頂端選單建立一個（名稱隨意），
+   然後按「開始使用」：填應用程式名稱、你的 email，對象（Audience）選「外部」，同意條款後建立。
+2. 左側「目標對象（Audience）」→ 按「發布應用程式」改成正式版，否則只有測試使用者名單上的人能登入
+   （只用基本登入，不需送審）。
+3. 左側「用戶端（Clients）」→「建立用戶端」→ 應用程式類型選「網頁應用程式」。
 4. 「已授權的 JavaScript 來源」加入：
    - `https://davidloman5.github.io`
    - `http://localhost:5173`（本機開發用）

@@ -12,7 +12,7 @@ const RULES = {
     total: 128,
     caps: { basic: 14, required: 31, program: 12, prof: 30, free: 17, core: 18, lang: 6 },
     mins: { literacy: 6, domain: 8 },
-    generalIntoFreeCap: 4,
+    coreIntoFreeCap: 4,
     globalView: false,
     gates: [
       { id: "gpe", label: "通過程式能力鑑定", note: "「基礎程式設計」及格條件", on: true },
@@ -30,7 +30,7 @@ const RULES = {
     total: 128,
     caps: { basic: 14, required: 31, program: 12, prof: 30, free: 17, core: 18, lang: 6 },
     mins: { literacy: 6, domain: 8 },
-    generalIntoFreeCap: 4,
+    coreIntoFreeCap: 4,
     globalView: true,
     gates: [
       { id: "gpe", label: "通過程式能力鑑定", note: "「基礎程式設計」及格條件", on: true },
@@ -184,7 +184,7 @@ function parseTranscript(text) {
  * ================================================================== */
 
 function allocate(courses, rules) {
-  const { caps, generalIntoFreeCap } = rules;
+  const { caps, coreIntoFreeCap } = rules;
   const sum = (k) => courses.filter((c) => c.cat === k).reduce((a, c) => a + (Number(c.credits) || 0), 0);
 
   const rawBasic = sum("basic");
@@ -213,11 +213,11 @@ function allocate(courses, rules) {
   const lang = Math.min(rawLang, caps.lang);
   const ovLang = Math.max(0, rawLang - caps.lang);
 
-  const generalOv = ovCore + ovLang;
-  const generalIn = Math.min(generalOv, generalIntoFreeCap);
-  const generalDropped = generalOv - generalIn;
+  // 通識超修進自由選修有上限；語言與溝通超修不設限
+  const coreIn = Math.min(ovCore, coreIntoFreeCap);
+  const coreDropped = ovCore - coreIn;
 
-  const rawFree = sum("free") + ovBasic + ovProf + generalIn;
+  const rawFree = sum("free") + ovBasic + ovProf + coreIn + ovLang;
   const free = Math.min(rawFree, caps.free);
   const ovFree = Math.max(0, rawFree - caps.free);
 
@@ -238,13 +238,14 @@ function allocate(courses, rules) {
         { label: "領域課程", got: rawDom, min: rules.mins.domain },
       ] },
     { key: "lang", label: "語言與溝通", got: lang, cap: caps.lang,
-      out: ovLang ? [{ to: "自由選修", n: ovLang, capped: true }] : [], in: [] },
+      out: ovLang ? [{ to: "自由選修", n: ovLang }] : [], in: [] },
     { key: "free", label: "自由選修", got: free, cap: caps.free,
       out: ovFree ? [{ to: "無處可去", n: ovFree }] : [],
       in: [
         ovBasic && { from: "基礎科學", n: ovBasic },
         ovProf && { from: "專業選修", n: ovProf },
-        generalIn && { from: "通識／外語", n: generalIn },
+        coreIn && { from: "核心課程", n: coreIn },
+        ovLang && { from: "語言與溝通", n: ovLang },
       ].filter(Boolean) },
   ];
 
@@ -255,8 +256,8 @@ function allocate(courses, rules) {
     notes.push({ t: "warn", m: `基本素養還差 ${r(rules.mins.literacy - rawLit)} 學分（下限 ${rules.mins.literacy}）` });
   if (rawDom < rules.mins.domain)
     notes.push({ t: "warn", m: `領域課程還差 ${r(rules.mins.domain - rawDom)} 學分（下限 ${rules.mins.domain}）。資訊學院對四大領域不予限制` });
-  if (generalDropped > 0)
-    notes.push({ t: "flag", m: `通識／外語超修有 ${r(generalDropped)} 學分未採計 —— 目前採「外語超修也受自由選修 4 學分上限」的保守解釋。校級通則把語言與溝通和核心課程分成兩類，系上文件則併為「核心通識 24（含語言與溝通 6）」，兩份粒度不同。請向系辦確認。` });
+  if (coreDropped > 0)
+    notes.push({ t: "flag", m: `通識超修有 ${r(coreDropped)} 學分未採計 —— 通識超修進自由選修以 ${coreIntoFreeCap} 學分為限。語言與溝通超修則不受此限，可全數計入自由選修。` });
   if (ovFree > 0)
     notes.push({ t: "flag", m: `自由選修已滿，多出的 ${r(ovFree)} 學分無法計入畢業學分` });
   if (rawReq > caps.required)
