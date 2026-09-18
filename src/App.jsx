@@ -36,6 +36,14 @@ export default function App() {
 
   const cloud = useCloudSync(data, applyData);
 
+  // 從成績單匯入：加入課程，並套用抬頭讀到的入學學年度與「學術倫理通過」
+  const importCourses = (rows, meta) => {
+    setCourses((cs) => [...cs, ...rows]);
+    const nextYear = meta.entryYear && RULES[meta.entryYear] ? meta.entryYear : year;
+    if (nextYear !== year) setYear(nextYear);
+    if (meta.ethics) setGates((x) => ({ ...x, [`${nextYear}:ethics`]: true }));
+  };
+
   const result = useMemo(() => allocate(courses, rules), [courses, rules]);
   const progs = useMemo(() => programProgress(courses), [courses]);
 
@@ -46,12 +54,22 @@ export default function App() {
     (c) => c.eng && ["required", "prof", "program"].includes(c.cat) && !/專題|研討/.test(c.name)
   );
   const doneProgs = progs.filter((p) => p.done);
-  const autoState = { eng: engCandidates.length > 0, topic: doneProgs.length > 0 };
+  const peCount = courses.filter((c) => /體育/.test(c.name)).length;
+  const mentorHit = courses.some((c) => /導師時間/.test(c.name));
+
+  // 能從課程清單自動判定的門檻，以及顯示給使用者看的說明
+  const auto = {
+    eng: { done: engCandidates.length > 0, note: `已偵測到：${engCandidates.map((c) => c.name).join("、")}` },
+    topic: { done: doneProgs.length > 0, note: `已完成：${doneProgs.map((p) => p.name).join("、")}` },
+    mentor: { done: mentorHit, note: "已偵測到：生涯規劃及導師時間" },
+    pe: { done: peCount >= 6, note: `成績單上有 ${peCount} 學期`, progress: peCount > 0 ? `成績單上有 ${peCount} / 6 學期` : null },
+  };
 
   const gateList = rules.gates.map((g) => {
     const manual = !!gates[`${year}:${g.id}`];
-    const satisfiedAuto = g.auto ? !!autoState[g.auto] : false;
-    return { ...g, done: satisfiedAuto || manual, satisfiedAuto };
+    const a = g.auto ? auto[g.auto] : null;
+    const satisfiedAuto = !!a?.done;
+    return { ...g, done: satisfiedAuto || manual, satisfiedAuto, autoNote: a?.note, progressNote: a?.progress };
   });
   const activeGates = gateList.filter((g) => g.on);
   const gatesDone = activeGates.filter((g) => g.done).length;
@@ -84,9 +102,8 @@ export default function App() {
         </div>
         <div className="col">
           <ProgramPanel ranked={ranked} shown={shown} target={target} setTarget={setTarget} />
-          <GatesPanel gateList={gateList} year={year} setGates={setGates}
-            engCandidates={engCandidates} doneProgs={doneProgs} />
-          <CoursesPanel courses={courses} setCourses={setCourses} />
+          <GatesPanel gateList={gateList} year={year} setGates={setGates} />
+          <CoursesPanel courses={courses} setCourses={setCourses} year={year} onImport={importCourses} />
         </div>
       </main>
 
